@@ -1,12 +1,15 @@
+import os
+
+import pytest
 from sqlalchemy import text
+
 from app.core.database import engine
 
-try:
-    with engine.connect() as connection:
-        result = connection.execute(text("SELECT version()"))
-        print("Database connected successfully!")
-        print(result.scalar())
 
-except Exception as error:
-    print("Database connection failed:")
-    print(error)
+def test_database_connection():
+    if not os.getenv("DB_HOST"):
+        pytest.skip("Configure backend/.env to run the PostgreSQL connection test")
+
+    with engine.connect() as connection:
+        result = connection.execute(text("SELECT 1"))
+        assert result.scalar() == 1
