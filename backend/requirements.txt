@@ -1,4 +1,3 @@
-
 fastapi
 uvicorn[standard]
 sqlalchemy
@@ -7,3 +6,5 @@ pydantic
 pydantic-settings
 python-multipart
 python-dotenv
+pytest
+httpx
