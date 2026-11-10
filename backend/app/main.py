@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 
+from app.api.routes.analytics import router as analytics_router
 from app.api.routes.auth import router as auth_router
+from app.api.routes.budgets import router as budgets_router
 from app.api.routes.transactions import router as transactions_router
 from app.core.database import Base, engine
+from app.models.budget import Budget  # noqa: F401 - registers model metadata
 from app.models.transaction import Transaction  # noqa: F401 - registers model metadata
 from app.models.user import User  # noqa: F401 - registers model metadata
 
@@ -20,6 +23,8 @@ def create_database_tables():
 
 app.include_router(auth_router)
 app.include_router(transactions_router)
+app.include_router(budgets_router)
+app.include_router(analytics_router)
 
 
 @app.get("/")
