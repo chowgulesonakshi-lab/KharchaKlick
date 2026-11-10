@@ -4,8 +4,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.api.deps import get_current_user
 from app.core.database import Base, get_db
 from app.main import app
+from app.models.user import User
 
 test_engine = create_engine(
     "sqlite://",
@@ -26,7 +28,27 @@ def client():
         finally:
             db.close()
 
+    # Create a default test user in the isolated SQLite DB
+    db = TestingSessionLocal()
+    test_user = User(
+        name="Test User",
+        email="testuser@example.com",
+        hashed_password="hashed_placeholder_pw",
+    )
+    db.add(test_user)
+    db.commit()
+    db.refresh(test_user)
+    db.close()
+
+    def override_get_current_user():
+        db_session = TestingSessionLocal()
+        try:
+            return db_session.get(User, test_user.id)
+        finally:
+            db_session.close()
+
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = override_get_current_user
     # The app's normal startup creates tables in PostgreSQL; tests use isolated SQLite.
     app.router.on_startup.clear()
 

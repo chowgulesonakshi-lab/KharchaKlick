@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 
+from app.api.routes.auth import router as auth_router
 from app.api.routes.transactions import router as transactions_router
 from app.core.database import Base, engine
 from app.models.transaction import Transaction  # noqa: F401 - registers model metadata
+from app.models.user import User  # noqa: F401 - registers model metadata
 
 app = FastAPI(
     title="KharchaKlick API",
@@ -16,6 +18,7 @@ def create_database_tables():
     Base.metadata.create_all(bind=engine)
 
 
+app.include_router(auth_router)
 app.include_router(transactions_router)
 
 
