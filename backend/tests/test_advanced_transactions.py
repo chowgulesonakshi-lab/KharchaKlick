@@ -572,3 +572,4 @@ def test_crud_with_new_payment_methods(client, auth_headers):
     del_res = client.delete(f"/transactions/{tx_id}", headers=auth_headers)
     assert del_res.status_code == 204
     assert client.get(f"/transactions/{tx_id}", headers=auth_headers).status_code == 404
+
