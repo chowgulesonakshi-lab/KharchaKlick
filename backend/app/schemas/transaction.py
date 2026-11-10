@@ -9,7 +9,16 @@ Category = Literal[
     "Food", "Transport", "Shopping", "Bills", "Education",
     "Entertainment", "Health", "Travel", "Other",
 ]
-PaymentMethod = Literal["UPI", "Cash", "Card", "Net Banking", "Wallet", "Other"]
+PaymentMethod = Literal[
+    "Cash",
+    "UPI",
+    "Credit Card",
+    "Debit Card",
+    "Card",
+    "Net Banking",
+    "Wallet",
+    "Other",
+]
 TransactionType = Literal["expense", "income"]
 
 
@@ -46,3 +55,16 @@ class TransactionResponse(BaseModel):
     transaction_type: str
     transaction_date: datetime
     created_at: datetime
+
+
+class PaginatedTransactionResponse(BaseModel):
+    items: list[TransactionResponse]
+    total: int
+    total_count: int | None = None
+    page: int
+    page_size: int
+    total_pages: int
+    has_previous: bool
+    has_next: bool
+    has_prev: bool | None = None
+    transactions: list[TransactionResponse] | None = None

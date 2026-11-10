@@ -1,5 +1,6 @@
 from app.schemas.transaction import (
     Category,
+    PaginatedTransactionResponse,
     PaymentMethod,
     TransactionCreate,
     TransactionResponse,
@@ -10,6 +11,7 @@ from app.schemas.user import TokenResponse, UserLogin, UserRegister, UserRespons
 
 __all__ = [
     "Category",
+    "PaginatedTransactionResponse",
     "PaymentMethod",
     "TransactionCreate",
     "TransactionResponse",
@@ -20,4 +22,3 @@ __all__ = [
     "UserResponse",
     "TokenResponse",
 ]
-
