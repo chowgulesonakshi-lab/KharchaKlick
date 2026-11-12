@@ -731,3 +731,48 @@
 @media (max-width: 460px) {
   .transaction-filters { grid-template-columns: 1fr; }
 }
+
+
+/* Transaction management */
+.transactions-heading-actions { display: flex; align-items: center; gap: 12px; }
+.add-transaction-button { min-height: 42px; padding: 0 15px; white-space: nowrap; }
+.transaction-actions { display: flex; justify-content: flex-end; gap: 7px; }
+.icon-action {
+  display: inline-grid; width: 34px; height: 34px; place-items: center;
+  border: 1px solid var(--line); border-radius: 8px; color: #607267;
+  background: #fff; cursor: pointer;
+}
+.icon-action:hover { border-color: #a8c9ad; color: #216b43; background: #f5faf5; }
+.icon-action.delete:hover { border-color: #efc5bd; color: #b04435; background: #fff7f5; }
+.icon-action:disabled { opacity: .45; cursor: not-allowed; }
+.transaction-modal-backdrop {
+  position: fixed; inset: 0; z-index: 20; display: grid; place-items: center;
+  overflow-y: auto; padding: 24px; background: rgba(20, 37, 27, .48);
+}
+.transaction-modal {
+  width: min(100%, 560px); max-height: calc(100vh - 48px); overflow-y: auto;
+  padding: 26px; border: 1px solid var(--line); border-radius: 17px;
+  background: #fff; box-shadow: 0 24px 80px rgba(17, 40, 25, .2);
+}
+.transaction-modal-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 22px; }
+.transaction-modal-heading h2 { margin: 7px 0 0; color: var(--ink); font-size: 1.45rem; letter-spacing: -.045em; }
+.transaction-form { display: grid; gap: 15px; }
+.transaction-form .field select,
+.transaction-form .field input {
+  width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #dce5dd;
+  border-radius: 9px; outline: none; color: #34443b; background: #fff; font: inherit; font-size: .88rem;
+}
+.transaction-form .field select:focus,
+.transaction-form .field input:focus { border-color: #75ad82; box-shadow: 0 0 0 3px rgba(44,125,78,.1); }
+.transaction-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.transaction-form-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 5px; }
+.transaction-form-actions .filter-reset { min-height: 44px; }
+.transaction-form-actions .primary-button { min-height: 44px; padding: 0 17px; }
+@media (max-width: 650px) {
+  .transactions-heading-actions { width: 100%; justify-content: space-between; flex-wrap: wrap; }
+  .transaction-modal-backdrop { align-items: start; padding: 12px; }
+  .transaction-modal { max-height: calc(100vh - 24px); padding: 20px; }
+}
+@media (max-width: 420px) {
+  .transaction-form-grid { grid-template-columns: 1fr; }
+}
