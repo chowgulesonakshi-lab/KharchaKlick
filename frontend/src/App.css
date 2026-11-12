@@ -647,3 +647,87 @@
   .transaction-row { gap: 8px; }
   .transaction-amount { font-size: 0.72rem; }
 }
+
+
+/* Transactions page */
+.transactions-panel { margin-top: 24px; }
+.transaction-filters {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(130px, .8fr) minmax(150px, .9fr) auto;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.transaction-filters input,
+.transaction-filters select {
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  outline: none;
+  color: #536258;
+  background: #fff;
+  font: inherit;
+  font-size: .82rem;
+}
+.transaction-filters input:focus,
+.transaction-filters select:focus { border-color: #75ad82; }
+.filter-reset {
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: #607267;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.transactions-table-wrap { width: 100%; overflow-x: auto; }
+.transactions-table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
+.transactions-table th {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--line);
+  color: #8a988e;
+  font-size: .7rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.transactions-table td {
+  padding: 15px 12px;
+  border-bottom: 1px solid #f0f3f0;
+  color: #68776d;
+  font-size: .8rem;
+}
+.transaction-title-cell { display: flex; align-items: center; gap: 10px; }
+.transaction-title-cell > span:last-child { display: flex; flex-direction: column; gap: 4px; }
+.transaction-title-cell strong { color: #34443a; font-size: .82rem; }
+.transaction-title-cell small { color: #9aa59d; font-size: .72rem; }
+.amount-cell { text-align: right; }
+.transactions-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 17px;
+  color: #89968d;
+  font-size: .78rem;
+}
+.transactions-pagination div { display: flex; gap: 8px; }
+.transactions-pagination button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: #526359;
+  background: #fff;
+  cursor: pointer;
+}
+.transactions-pagination button:disabled { opacity: .4; cursor: not-allowed; }
+@media (max-width: 760px) {
+  .transaction-filters { grid-template-columns: 1fr 1fr; }
+  .filter-reset { min-height: 42px; }
+}
+@media (max-width: 460px) {
+  .transaction-filters { grid-template-columns: 1fr; }
+}
