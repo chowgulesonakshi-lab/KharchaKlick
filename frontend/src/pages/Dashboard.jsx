@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -93,8 +94,8 @@ function Dashboard() {
       <aside className="sidebar">
         <div className="brand"><span className="brand-mark"><Wallet size={21} /></span><span>KharchaKlick</span></div>
         <div className="sidebar-label">Workspace</div>
-        <a className="sidebar-link active" href="/dashboard"><LayoutDashboard size={18} /><span>Overview</span></a>
-        <div className="sidebar-link" aria-disabled="true"><ReceiptText size={18} /><span>Transactions</span></div>
+        <Link className="sidebar-link active" to="/dashboard"><LayoutDashboard size={18} /><span>Overview</span></Link>
+        <Link className="sidebar-link" to="/transactions"><ReceiptText size={18} /><span>Transactions</span></Link>
         <div className="sidebar-link" aria-disabled="true"><PiggyBank size={18} /><span>Budgets</span></div>
         <div className="sidebar-link" aria-disabled="true"><ChartNoAxesCombined size={18} /><span>Insights</span></div>
         <div className="sidebar-footer">Your personal finance companion.<br />More clarity, one step at a time.</div>
