@@ -57,6 +57,8 @@ function Transactions() {
   const [type, setType] = useState('')
   const [category, setCategory] = useState('')
   const [merchant, setMerchant] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [formOpen, setFormOpen] = useState(false)
@@ -75,6 +77,8 @@ function Transactions() {
       if (type) params.transaction_type = type
       if (category) params.category = category
       if (merchant.trim()) params.merchant = merchant.trim()
+      if (dateFrom) params.date_from = dateFrom
+      if (dateTo) params.date_to = dateTo
       const response = await financeApi.transactions(params)
       const data = response.data
       setTransactions(Array.isArray(data) ? data : data.items || data.transactions || [])
@@ -85,7 +89,7 @@ function Transactions() {
     } finally {
       setIsLoading(false)
     }
-  }, [page, type, category, merchant, refreshKey])
+  }, [page, type, category, merchant, dateFrom, dateTo, refreshKey])
 
   useEffect(() => {
     loadTransactions()
@@ -95,6 +99,8 @@ function Transactions() {
     setType('')
     setCategory('')
     setMerchant('')
+    setDateFrom('')
+    setDateTo('')
     setPage(1)
   }
 
@@ -235,6 +241,20 @@ function Transactions() {
                 <option value="">All categories</option>
                 {categories.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
+              <input
+                aria-label="Filter from date"
+                type="date"
+                value={dateFrom}
+                max={dateTo || undefined}
+                onChange={(event) => { setDateFrom(event.target.value); setPage(1) }}
+              />
+              <input
+                aria-label="Filter to date"
+                type="date"
+                value={dateTo}
+                min={dateFrom || undefined}
+                onChange={(event) => { setDateTo(event.target.value); setPage(1) }}
+              />
               <button className="filter-reset" type="button" onClick={resetFilters}>Clear filters</button>
             </div>
 
