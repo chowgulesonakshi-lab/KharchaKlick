@@ -194,7 +194,7 @@ function Transactions() {
         <div className="sidebar-label">Workspace</div>
         <Link className="sidebar-link" to="/dashboard"><LayoutDashboard size={18} /><span>Overview</span></Link>
         <Link className="sidebar-link active" to="/transactions"><ReceiptText size={18} /><span>Transactions</span></Link>
-        <div className="sidebar-link" aria-disabled="true"><PiggyBank size={18} /><span>Budgets</span></div>
+        <Link className="sidebar-link" to="/budgets"><PiggyBank size={18} /><span>Budgets</span></Link>
         <div className="sidebar-link" aria-disabled="true"><ChartNoAxesCombined size={18} /><span>Insights</span></div>
         <div className="sidebar-footer">Your personal finance companion.<br />More clarity, one step at a time.</div>
       </aside>
