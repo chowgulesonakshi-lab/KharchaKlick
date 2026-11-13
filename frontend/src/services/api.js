@@ -27,6 +27,9 @@ export const financeApi = {
   deleteTransaction: (id) => api.delete(`/transactions/${id}`),
   budgets: (params = {}) => api.get('/budgets/', { params }),
   budgetUtilization: (params = {}) => api.get('/budgets/utilization', { params }),
+  createBudget: (payload) => api.post('/budgets/', payload),
+  updateBudget: (id, payload) => api.patch(`/budgets/${id}`, payload),
+  deleteBudget: (id) => api.delete(`/budgets/${id}`),
 }
 
 export default api
