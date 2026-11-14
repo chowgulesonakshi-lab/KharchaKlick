@@ -1,73 +1,72 @@
 # KharchaKlick
 
-KharchaKlick is a personal expense management and budget tracking application with a **FastAPI + PostgreSQL backend** and a **React frontend**.
+**A personal finance and expense tracking application built to make everyday money management clearer.**
 
-## Features Implemented
+KharchaKlick helps users record income and expenses, manage budgets, and understand where their money goes. It combines a React frontend with a FastAPI backend and PostgreSQL database, with financial summaries and rule-based spending insights to make unusual activity easier to spot.
 
-### Milestones 1 & 2: Transaction Management
-- Full CRUD for income and expenses (`POST`, `GET`, `PATCH`, `DELETE /transactions/`).
-- Database-level pagination with page metadata.
-- Date-range filtering, payment method filtering, and sorting.
-- Composite database indexes for high-performance multi-tenant queries.
+## Features
 
-### Milestone 3: Authentication & User Management
-- Secure user registration (`POST /auth/register`) with email validation and uniqueness checks.
-- Password hashing using bcrypt.
-- User login (`POST /auth/login`) generating signed JWT access tokens.
-- Reusable Bearer token validation and strict user-level data isolation.
+### Transaction Management
+- Add, view, edit, and delete income and expense transactions.
+- Filter transactions by date range and payment method.
+- Sort and paginate transaction records.
+- Keep each user's financial records isolated.
 
-### Milestone 4: Financial Analytics & Budget Tracking
-- **Financial Summary (`GET /analytics/summary`)**: Income, expenses, net balance, and transaction counts across selected periods.
-- **Category Analytics (`GET /analytics/categories`)**: Category breakdown, percentage share, transaction counts, and highest-spending category.
-- **Monthly Trends (`GET /analytics/monthly`)**: Month-over-month spending comparison and historical trend points.
-- **Budget Management (`/budgets`)**: CRUD for monthly and category budgets, actual spending, remaining headroom, and utilization.
-- **Budget Utilization (`GET /budgets/utilization`)**: Active budget tracking and overrun alerts.
-- **Financial Insights (`GET /analytics/insights`)**: Category concentration, spending surges, deficit alerts, and budget warnings.
+### Dashboard & Financial Analytics
+- View total income, expenses, and net balance.
+- Review spending breakdowns by category.
+- Compare monthly spending trends.
+- Identify high-spending categories and changes in spending patterns.
 
-### Milestone 5: Frontend Foundation
-- React application with client-side routing.
-- Login and registration screens connected to the FastAPI authentication endpoints.
-- Axios API client with JWT Bearer token injection.
-- Persistent authentication state and authenticated profile restoration.
-- Protected dashboard route and sign-out flow.
-- Responsive dashboard shell ready for transaction, budget, and analytics screens.
+### Budget Management
+- Create and manage monthly and category-wise budgets.
+- Track actual spending against budget limits.
+- View remaining budget and utilization.
+- Surface budget overruns.
 
-## Tech Stack
+### Spending Insights & Unusual Transactions
+- Highlight budget overruns, including category-specific overspending.
+- Identify high category concentration in overall expenses.
+- Flag unusual transactions using category spending patterns, including a minimum transaction-count check and comparison against the category median.
+- Present spending signals to help users investigate activity that stands out.
 
-**Backend**
-- FastAPI, Python 3.10+
-- PostgreSQL, SQLAlchemy 2.0
-- Pydantic v2 and Pydantic Settings
-- PyJWT and bcrypt
-- Pytest and HTTPX TestClient
+### Authentication & Security
+- Register and log in with securely hashed passwords.
+- Authenticate API requests using JWT access tokens.
+- Protect frontend routes and restore authenticated sessions.
+- Enforce user-level data isolation across financial records.
 
-**Frontend**
-- React 19 and Vite
-- React Router
-- Axios
-- Tailwind CSS 4 and Lucide React
-- Recharts (for upcoming analytics visualizations)
+## Technology Stack
+
+| Layer | Technologies |
+|---|---|
+| Frontend | React 19, Vite, React Router, Axios |
+| UI & Visualization | Tailwind CSS 4, Lucide React, Recharts |
+| Backend | Python, FastAPI, Pydantic |
+| Database & ORM | PostgreSQL, SQLAlchemy 2.0 |
+| Authentication | JWT, bcrypt |
+| Testing | Pytest, HTTPX TestClient |
 
 ## Project Structure
 
-```
+```text
 KharchaKlick/
 ├── backend/
 │   ├── app/
-│   │   ├── api/routes/       # Auth, transactions, budgets, analytics
-│   │   ├── core/             # Database, configuration, security
-│   │   ├── models/           # User, transaction, budget
-│   │   ├── schemas/          # API request and response schemas
+│   │   ├── api/routes/       # Authentication, transactions, budgets, analytics
+│   │   ├── core/             # Configuration, database, security
+│   │   ├── models/           # Database models
+│   │   ├── schemas/          # Request and response schemas
 │   │   └── main.py
 │   ├── tests/
 │   ├── .env.example
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── components/       # Protected route
-│   │   ├── context/          # Authentication state
-│   │   ├── pages/            # Login, register, dashboard
-│   │   ├── services/         # Axios API client
+│   │   ├── components/
+│   │   ├── context/
+│   │   ├── pages/
+│   │   ├── services/
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   ├── index.html
@@ -75,29 +74,47 @@ KharchaKlick/
 └── README.md
 ```
 
-## Backend Setup
+## Getting Started
 
-### 1. Create and activate a virtual environment
+### Prerequisites
+- Python 3.10+
+- Node.js and npm
+- PostgreSQL
+
+### 1. Clone the repository
 
 ```bash
-cd KharchaKlick/backend
+git clone https://github.com/chowgulesonakshi-lab/KharchaKlick.git
+cd KharchaKlick
+```
+
+### 2. Set up the backend
+
+```bash
+cd backend
 python -m venv venv
+```
 
-# Windows PowerShell
+Activate the virtual environment:
+
+**Windows PowerShell**
+```powershell
 .\venv\Scripts\Activate.ps1
+```
 
-# Linux / macOS
+**Linux / macOS**
+```bash
 source venv/bin/activate
 ```
 
-### 2. Install dependencies and configure environment
+Install dependencies and create the environment file:
 
 ```bash
 pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Set your PostgreSQL credentials and JWT settings in `backend/.env`:
+Configure your PostgreSQL connection and JWT settings in `.env`:
 
 ```ini
 DB_USER=postgres
@@ -106,34 +123,34 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=kharchaklick
 
-JWT_SECRET_KEY=your_super_secret_jwt_key_at_least_32_characters_long
+JWT_SECRET_KEY=replace_with_a_secure_secret_at_least_32_characters_long
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 ```
 
-### 3. Run the API
-
-From the `backend` directory:
+Start the API from the `backend` directory:
 
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-API documentation: `http://localhost:8000/docs`
+The API and interactive documentation will be available at:
+- API: http://localhost:8000
+- Swagger UI: http://localhost:8000/docs
 
-## Frontend Setup
+### 3. Set up the frontend
 
-Open a second terminal:
+In a separate terminal:
 
 ```bash
-cd KharchaKlick/frontend
+cd frontend
 npm install
 npm run dev
 ```
 
-Open the Vite URL shown in the terminal (normally `http://localhost:5173`). The Vite development server proxies `/api` requests to the backend at `http://127.0.0.1:8000`.
+Open the local Vite URL shown in the terminal (typically http://localhost:5173). The development server is configured to proxy `/api` requests to the backend.
 
-## Running Backend Tests
+### 4. Run backend tests
 
 From the repository root:
 
@@ -141,4 +158,17 @@ From the repository root:
 python -m pytest backend/tests -v
 ```
 
-The backend test suite uses isolated test databases to verify authentication, user isolation, transactions, analytics, and budgets.
+The test suite covers core backend functionality, including authentication, user isolation, transactions, analytics, and budgets.
+
+## Project Status
+
+KharchaKlick is being developed incrementally. The current implementation includes authenticated transaction management, financial analytics, budget tracking, and spending-insight features. The project is structured to support further improvements, including AI-assisted explanations of spending patterns and natural-language financial queries.
+
+## Future Scope
+- AI-generated explanations for changes in spending patterns.
+- Personalized, data-driven suggestions for managing expenses.
+- Natural-language questions about transaction history and budgets.
+
+---
+
+Built as a full-stack personal finance project.
