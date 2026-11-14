@@ -40,6 +40,11 @@ function Insights() {
   const [insights, setInsights] = useState(null)
   const [categories, setCategories] = useState(null)
   const [monthly, setMonthly] = useState(null)
+  const [financialReview, setFinancialReview] = useState(null)
+  const [financialQuestion, setFinancialQuestion] = useState('How much did I spend on Food in the last three months?')
+  const [questionResult, setQuestionResult] = useState(null)
+  const [isAsking, setIsAsking] = useState(false)
+  const [intelligenceError, setIntelligenceError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const initials = user?.name?.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'U'
@@ -50,15 +55,17 @@ function Insights() {
       setIsLoading(true)
       setError('')
       try {
-        const [insightResult, categoryResult, monthlyResult] = await Promise.all([
+        const [insightResult, categoryResult, monthlyResult, reviewResult] = await Promise.all([
           financeApi.insights(),
           financeApi.categories(monthRange()),
           financeApi.monthly({ months: 6 }),
+          financeApi.financialReview().catch(() => null),
         ])
         if (!active) return
         setInsights(insightResult.data)
         setCategories(categoryResult.data)
         setMonthly(monthlyResult.data)
+        setFinancialReview(reviewResult?.data || null)
       } catch (requestError) {
         if (active) setError(requestError.response?.data?.detail || 'We could not load your financial insights. Please try again.')
       } finally {
@@ -72,6 +79,22 @@ function Insights() {
   const insightItems = insights?.insights || []
   const budgetAlerts = insights?.budget_alerts || []
   const categoryItems = categories?.categories || []
+
+  const askQuestion = async (event) => {
+    event.preventDefault()
+    if (!financialQuestion.trim()) return
+    setIsAsking(true)
+    setIntelligenceError('')
+    setQuestionResult(null)
+    try {
+      const response = await financeApi.askFinancialQuestion(financialQuestion.trim())
+      setQuestionResult(response.data)
+    } catch (requestError) {
+      setIntelligenceError(requestError.response?.data?.detail || 'Could not answer that question. Please try again.')
+    } finally {
+      setIsAsking(false)
+    }
+  }
 
   return (
     <div className="dashboard-layout">
@@ -181,6 +204,40 @@ function Insights() {
               <div className="chart-legend"><span><i className="legend-income" />Income</span><span><i className="legend-expense" />Expenses</span></div>
             </section>
           </div>
+
+          <section className="insight-section intelligence-section">
+            <div className="budgets-section-heading"><div><h2>AI financial intelligence</h2><p>Understand changes, spot unusual activity and get practical next steps.</p></div></div>
+            <div className="intelligence-grid">
+              <article className="panel intelligence-panel">
+                <h3>Why did my spending change?</h3>
+                {financialReview ? <>
+                  <p className="intelligence-explanation">{financialReview.explanation}</p>
+                  <div className="intelligence-metrics">
+                    <span>This month <strong>{currency.format(financialReview.facts.current_month_expenses)}</strong></span>
+                    <span>Last month <strong>{currency.format(financialReview.facts.previous_month_expenses)}</strong></span>
+                    <span>Change <strong>{financialReview.facts.change_percentage == null ? '—' : `${financialReview.facts.change_percentage > 0 ? '+' : ''}${financialReview.facts.change_percentage}%`}</strong></span>
+                  </div>
+                  <h4>Practical suggestions</h4>
+                  {financialReview.advice.map((item) => <div className="intelligence-advice" key={item.title}><strong>{item.title}</strong><p>{item.message}</p></div>)}
+                </> : <p className="chart-empty">Add transactions to generate a spending review.</p>}
+              </article>
+              <article className="panel intelligence-panel">
+                <h3>Unusual transactions</h3>
+                <p className="intelligence-muted">Transactions that stand out compared with your other spending in the same category.</p>
+                {financialReview?.anomalies?.length ? financialReview.anomalies.map((item) => <div className="anomaly-row" key={item.transaction_id}><div><strong>{item.description}</strong><small>{item.category} · {item.reason}</small></div><b>{currency.format(item.amount)}</b></div>) : <p className="chart-empty">No unusual transactions detected from the available data.</p>}
+              </article>
+            </div>
+            <article className="panel intelligence-query">
+              <h3>Ask your finances</h3>
+              <p className="intelligence-muted">Ask questions about your recorded expenses in everyday language.</p>
+              <form className="intelligence-query-form" onSubmit={askQuestion}>
+                <input aria-label="Ask a financial question" value={financialQuestion} onChange={(event) => setFinancialQuestion(event.target.value)} placeholder="e.g. How much did I spend on Food in the last three months?" />
+                <button className="primary-button" type="submit" disabled={isAsking || !financialQuestion.trim()}>{isAsking ? 'Checking...' : 'Ask'}</button>
+              </form>
+              {intelligenceError && <p className="dashboard-error" role="alert">{intelligenceError}</p>}
+              {questionResult && <div className="intelligence-answer"><strong>{questionResult.answer}</strong><small>Calculated from {questionResult.transaction_count} matching transactions · Database result</small></div>}
+            </article>
+          </section>
 
           <section className="insight-section">
             <div className="budgets-section-heading"><div><h2>What your activity tells us</h2><p>Automatically generated from your income, expenses and budgets.</p></div></div>
