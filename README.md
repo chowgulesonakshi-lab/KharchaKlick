@@ -33,6 +33,8 @@ KharchaKlick is a personal expense management and budget tracking application wi
 - Transparent offline keyword-based fallback when Ollama is unavailable; the response identifies whether the suggestion came from AI or rules.
 - Suggestions are optional and never save a transaction or change its category until the user accepts them in the form.
 
+To enable local AI suggestions, install [Ollama](https://ollama.com), run `ollama pull qwen2.5:7b`, and keep the Ollama service running. Configure `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, and `OLLAMA_TIMEOUT_SECONDS` in `backend/.env`. If the model is unavailable, category suggestions automatically use the offline rules fallback.
+
 ### Milestone 5: Frontend Foundation
 - React application with client-side routing.
 - Login and registration screens connected to the FastAPI authentication endpoints.
