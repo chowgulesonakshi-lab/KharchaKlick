@@ -1,5 +1,6 @@
 import json
 import re
+from statistics import median
 from collections import defaultdict
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
@@ -124,8 +125,8 @@ def financial_review(db: Session = Depends(get_db), current_user: User = Depends
     for row in current_rows:
         amounts = category_amounts[row.category]
         if len(amounts) >= 3:
-            median = sorted(amounts)[len(amounts) // 2]
-            if median > 0 and _money(row.amount) >= max(median * 2.5, median + 1000):
+            typical_amount = median(amounts)
+            if typical_amount > 0 and _money(row.amount) >= typical_amount * 2.5:
                 anomalies.append({"transaction_id": row.id, "description": row.description,
                     "category": row.category, "amount": _money(row.amount),
                     "reason": f"This is at least 2.5 times the typical {row.category} transaction this month."})
