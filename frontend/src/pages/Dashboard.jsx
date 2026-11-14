@@ -97,7 +97,7 @@ function Dashboard() {
         <Link className="sidebar-link active" to="/dashboard"><LayoutDashboard size={18} /><span>Overview</span></Link>
         <Link className="sidebar-link" to="/transactions"><ReceiptText size={18} /><span>Transactions</span></Link>
         <Link className="sidebar-link" to="/budgets"><PiggyBank size={18} /><span>Budgets</span></Link>
-        <div className="sidebar-link" aria-disabled="true"><ChartNoAxesCombined size={18} /><span>Insights</span></div>
+        <Link className="sidebar-link" to="/insights"><ChartNoAxesCombined size={18} /><span>Insights</span></Link>
         <div className="sidebar-footer">Your personal finance companion.<br />More clarity, one step at a time.</div>
       </aside>
 
