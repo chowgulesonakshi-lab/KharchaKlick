@@ -776,3 +776,14 @@
 @media (max-width: 420px) {
   .transaction-form-grid { grid-template-columns: 1fr; }
 }
+
+.ai-suggest-button {
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  width:max-content; min-height:34px; margin-top:5px; padding:0 11px;
+  border:1px solid #d8e8da; border-radius:8px; color:#216b43;
+  background:#f3faf3; font-size:.76rem; font-weight:750; cursor:pointer;
+}
+.ai-suggest-button:hover { background:#eaf5eb; }
+.ai-suggest-button:disabled { opacity:.55; cursor:not-allowed; }
+.ai-suggestion-message { margin:2px 0 0; color:#55775e; font-size:.72rem; line-height:1.5; }
+.ai-suggestion-message.error { color:#a3332b; }
