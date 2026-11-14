@@ -138,16 +138,13 @@ def test_missing_transaction_returns_404(client):
     assert response.status_code == 404
 
 
-def test_intelligence_category_suggestion_uses_local_ai(client, monkeypatch):
+def test_intelligence_category_suggestion_uses_fast_rules(client, monkeypatch):
     from app.api.routes import intelligence
 
-    monkeypatch.setattr(
-        intelligence,
-        "ollama_suggestion",
-        lambda description, merchant, transaction_type: (
-            "Food", 0.91, "The merchant and description indicate a meal."
-        ),
-    )
+    def fail_if_ollama_called(*args, **kwargs):
+        raise AssertionError("Category hints should not call an LLM")
+
+    monkeypatch.setattr(intelligence, "ollama_suggestion", fail_if_ollama_called)
     response = client.post(
         "/intelligence/suggest-category",
         json={
@@ -157,12 +154,9 @@ def test_intelligence_category_suggestion_uses_local_ai(client, monkeypatch):
         },
     )
     assert response.status_code == 200
-    assert response.json() == {
-        "category": "Food",
-        "confidence": 0.91,
-        "reason": "The merchant and description indicate a meal.",
-        "source": "ollama",
-    }
+    data = response.json()
+    assert data["category"] == "Food"
+    assert data["source"] == "rules"
 
 
 def test_intelligence_category_suggestion_falls_back_to_rules(client, monkeypatch):
