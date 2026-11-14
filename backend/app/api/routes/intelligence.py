@@ -153,13 +153,14 @@ def financial_review(db: Session = Depends(get_db), current_user: User = Depends
         "change_amount": round(change, 2),
         "change_percentage": round(change_pct, 1) if change_pct is not None else None,
         "top_category": top_category, "anomaly_count": len(anomalies)}
-    narrative = _review_narrative(facts) or (
+    ai_narrative = _review_narrative(facts)
+    narrative = ai_narrative or (
         f"You spent ₹{current_total:,.0f} this month, " +
         (f"₹{abs(change):,.0f} {'more' if change > 0 else 'less'} than last month." if previous_total else "There is not enough previous-month data for a comparison.") +
         (f" {top_category} is your largest category." if top_category else " Add expenses to build a spending baseline.")
     )
     return {"facts": facts, "explanation": narrative, "advice": advice,
-        "anomalies": anomalies[:10], "narrative_source": "ollama" if _review_narrative_used(narrative, facts) else "rules"}
+        "anomalies": anomalies[:10], "narrative_source": "ollama" if ai_narrative else "rules"}
 
 def _review_narrative_used(narrative, facts):
     # The fallback string is deterministic; compare it to identify its source without another model call.
@@ -174,7 +175,7 @@ def natural_language_query(payload: FinancialQueryRequest, db: Session = Depends
     """Answer supported natural-language spend questions with exact database aggregates."""
     question = payload.question.lower()
     category = next((name for name in CATEGORIES if name.lower() in question), None)
-    month_match = re.search(r"(\\d+)\\s+months?", question)
+    month_match = re.search(r"(\d+)\s+months?", question)
     months = min(max(int(month_match.group(1)), 1), 24) if month_match else (3 if "last three" in question or "past three" in question else 1)
     start, _ = _month_bounds(months - 1)
     query = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
