@@ -28,12 +28,14 @@ KharchaKlick is a personal expense management and budget tracking application wi
 - Dedicated protected Insights dashboard with category spending distribution and six-month income/expense trends.
 - Savings-rate summary, generated financial insight cards, and budget alerts powered by the existing analytics API.
 
-### Milestone 10: AI Expense Intelligence
-- Authenticated category suggestions from a local Ollama model (`qwen2.5:7b`) using transaction description and merchant context.
-- Transparent offline keyword-based fallback when Ollama is unavailable; the response identifies whether the suggestion came from AI or rules.
-- Suggestions are optional and never save a transaction or change its category until the user accepts them in the form.
+### Milestone 10: AI Financial Intelligence
+- **Spending pattern explanations:** Compares this month's expenses with the previous month and uses a local Ollama model to explain the calculated change without inventing causes.
+- **Personalized financial advice:** Generates practical next steps from the user's largest spending categories and month-over-month trends.
+- **Anomaly detection:** Flags unusually large transactions relative to other transactions in the same category.
+- **Natural-language queries:** Ask questions such as "How much did I spend on Food in the last three months?" and receive exact database aggregates.
+- All intelligence endpoints are authenticated and scoped to the signed-in user's transactions. If Ollama is unavailable, the spending explanation uses a transparent deterministic fallback; anomaly detection, advice, and query results are calculated locally from transaction data.
 
-To enable local AI suggestions, install [Ollama](https://ollama.com), run `ollama pull qwen2.5:7b`, and keep the Ollama service running. Configure `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, and `OLLAMA_TIMEOUT_SECONDS` in `backend/.env`. If the model is unavailable, category suggestions automatically use the offline rules fallback.
+Ollama is optional. To enable AI-generated spending explanations, install [Ollama](https://ollama.com), run `ollama pull qwen2.5:7b`, and keep the service running. Configure `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, and `OLLAMA_TIMEOUT_SECONDS` in `backend/.env`. The app does not need an LLM for category suggestions; those remain a simple deterministic rule-based feature.
 
 ### Milestone 5: Frontend Foundation
 - React application with client-side routing.
