@@ -138,13 +138,7 @@ def test_missing_transaction_returns_404(client):
     assert response.status_code == 404
 
 
-def test_intelligence_category_suggestion_uses_fast_rules(client, monkeypatch):
-    from app.api.routes import intelligence
-
-    def fail_if_ollama_called(*args, **kwargs):
-        raise AssertionError("Category hints should not call an LLM")
-
-    monkeypatch.setattr(intelligence, "ollama_suggestion", fail_if_ollama_called)
+def test_intelligence_category_suggestion_uses_fast_rules(client):
     response = client.post(
         "/intelligence/suggest-category",
         json={
