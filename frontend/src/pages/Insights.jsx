@@ -20,11 +20,17 @@ const compactCurrency = (value) => {
   if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}k`
   return `₹${amount.toFixed(0)}`
 }
+const localDate = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 const monthRange = () => {
   const now = new Date()
   return {
-    start_date: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10),
-    end_date: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10),
+    start_date: localDate(new Date(now.getFullYear(), now.getMonth(), 1)),
+    end_date: localDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
   }
 }
 const tones = { positive: 'positive', warning: 'warning', alert: 'alert', info: 'info' }
