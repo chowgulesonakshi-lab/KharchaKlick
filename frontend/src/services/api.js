@@ -21,6 +21,7 @@ export const financeApi = {
   summary: (params = {}) => api.get('/analytics/summary', { params }),
   monthly: (params = {}) => api.get('/analytics/monthly', { params }),
   categories: (params = {}) => api.get('/analytics/categories', { params }),
+  insights: (params = {}) => api.get('/analytics/insights', { params }),
   transactions: (params = {}) => api.get('/transactions/', { params }),
   createTransaction: (payload) => api.post('/transactions/', payload),
   updateTransaction: (id, payload) => api.patch(`/transactions/${id}`, payload),
