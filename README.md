@@ -24,6 +24,15 @@ KharchaKlick is a personal expense management and budget tracking application wi
 - **Budget Utilization (`GET /budgets/utilization`)**: Active budget tracking and overrun alerts.
 - **Financial Insights (`GET /analytics/insights`)**: Category concentration, spending surges, deficit alerts, and budget warnings.
 
+### Milestone 9: Financial Insights
+- Dedicated protected Insights dashboard with category spending distribution and six-month income/expense trends.
+- Savings-rate summary, generated financial insight cards, and budget alerts powered by the existing analytics API.
+
+### Milestone 10: AI Expense Intelligence
+- Authenticated category suggestions from a local Ollama model (`qwen2.5:7b`) using transaction description and merchant context.
+- Transparent offline keyword-based fallback when Ollama is unavailable; the response identifies whether the suggestion came from AI or rules.
+- Suggestions are optional and never save a transaction or change its category until the user accepts them in the form.
+
 ### Milestone 5: Frontend Foundation
 - React application with client-side routing.
 - Login and registration screens connected to the FastAPI authentication endpoints.
