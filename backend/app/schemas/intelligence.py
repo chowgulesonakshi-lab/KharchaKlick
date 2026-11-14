@@ -19,4 +19,4 @@ class CategorySuggestionResponse(BaseModel):
     category: Category
     confidence: float = Field(ge=0, le=1)
     reason: str
-    source: Literal["ollama", "rules"]
+    source: Literal["rules"]
