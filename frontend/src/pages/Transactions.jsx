@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
+  Sparkles,
   LogOut,
   Pencil,
   PiggyBank,
@@ -66,6 +67,8 @@ function Transactions() {
   const [form, setForm] = useState(emptyForm)
   const [formError, setFormError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [isSuggesting, setIsSuggesting] = useState(false)
+  const [suggestion, setSuggestion] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
@@ -108,6 +111,7 @@ function Transactions() {
     setEditingId(null)
     setForm(emptyForm())
     setFormError('')
+    setSuggestion(null)
     setFormOpen(true)
   }
 
@@ -123,6 +127,7 @@ function Transactions() {
       transaction_date: new Date(transaction.transaction_date).toISOString().slice(0, 10),
     })
     setFormError('')
+    setSuggestion(null)
     setFormOpen(true)
   }
 
@@ -131,6 +136,33 @@ function Transactions() {
     setFormOpen(false)
     setEditingId(null)
     setFormError('')
+  }
+
+  const handleSuggestCategory = async () => {
+    if (!form.description.trim()) {
+      setSuggestion({ error: 'Add a description first so the assistant has something to analyze.' })
+      return
+    }
+    setIsSuggesting(true)
+    setSuggestion(null)
+    try {
+      const response = await financeApi.suggestCategory({
+        description: form.description.trim(),
+        merchant: form.merchant.trim() || null,
+        transaction_type: form.transaction_type,
+      })
+      const result = response.data
+      setForm((current) => ({ ...current, category: result.category }))
+      setSuggestion({
+        message: result.reason,
+        source: result.source,
+        confidence: result.confidence,
+      })
+    } catch (requestError) {
+      setSuggestion({ error: errorMessage(requestError, 'Could not generate a category suggestion. Please try again.') })
+    } finally {
+      setIsSuggesting(false)
+    }
   }
 
   const handleSubmit = async (event) => {
@@ -352,6 +384,8 @@ function Transactions() {
                   <select id="transaction-category" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>
                     {categories.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
+                  <button className="ai-suggest-button" type="button" onClick={handleSuggestCategory} disabled={isSuggesting || !form.description.trim()}><Sparkles size={15} />{isSuggesting ? 'Analyzing...' : 'Suggest category'}</button>
+                  {suggestion && <p className={suggestion.error ? 'ai-suggestion-message error' : 'ai-suggestion-message'} role="status">{suggestion.error || `${suggestion.message} (${suggestion.source === 'ollama' ? 'AI' : 'smart rules'} · ${Math.round(suggestion.confidence * 100)}% confidence)`}</p>}
                 </div>
                 <div className="field">
                   <label htmlFor="transaction-payment">Payment method</label>
