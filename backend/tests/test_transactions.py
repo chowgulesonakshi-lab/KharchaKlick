@@ -186,6 +186,24 @@ def test_financial_intelligence_query_aggregates_user_expenses(client):
     assert data["source"] == "database"
 
 
+def test_financial_review_flags_transaction_at_least_2_5_times_category_median(client, monkeypatch):
+    from app.api.routes import intelligence
+
+    monkeypatch.setattr(intelligence, "_review_narrative", lambda facts: None)
+    for amount in ("50.00", "60.00", "250.00", "1000.00"):
+        response = client.post("/transactions/", json=sample_transaction(
+            amount=amount, category="Shopping", description=f"Shopping test {amount}"
+        ))
+        assert response.status_code == 201
+
+    response = client.get("/intelligence/financial-review")
+    assert response.status_code == 200
+    anomalies = response.json()["anomalies"]
+    assert len(anomalies) == 1
+    assert anomalies[0]["amount"] == 1000.0
+    assert anomalies[0]["category"] == "Shopping"
+
+
 def test_financial_review_returns_calculated_facts_and_advice(client, monkeypatch):
     from app.api.routes import intelligence
 
