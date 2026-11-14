@@ -136,3 +136,88 @@ def test_reject_invalid_amount_and_category(client):
 def test_missing_transaction_returns_404(client):
     response = client.get("/transactions/9999")
     assert response.status_code == 404
+
+
+def test_intelligence_category_suggestion_uses_fast_rules(client):
+    response = client.post(
+        "/intelligence/suggest-category",
+        json={
+            "description": "Lunch with friends",
+            "merchant": "Campus Cafe",
+            "transaction_type": "expense",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["category"] == "Food"
+    assert data["source"] == "rules"
+
+
+
+def test_intelligence_category_suggestion_requires_authentication(client):
+    from app.api.deps import get_current_user
+
+    app.dependency_overrides.pop(get_current_user, None)
+    response = client.post(
+        "/intelligence/suggest-category",
+        json={"description": "Lunch at cafe"},
+    )
+    assert response.status_code == 401
+
+
+def test_financial_intelligence_query_aggregates_user_expenses(client):
+    client.post("/transactions/", json=sample_transaction(amount="125.50"))
+    client.post("/transactions/", json=sample_transaction(
+        amount="100.00", description="Groceries", transaction_date="2026-10-12T12:00:00"
+    ))
+    client.post("/transactions/", json=sample_transaction(
+        amount="300.00", description="Bus pass", category="Transport"
+    ))
+
+    response = client.post("/intelligence/query", json={
+        "question": "How much did I spend on Food in the last three months?"
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert data["category"] == "Food"
+    assert data["months"] == 3
+    assert data["total"] == 225.5
+    assert data["transaction_count"] == 2
+    assert data["source"] == "database"
+
+
+def test_financial_review_flags_transaction_at_least_2_5_times_category_median(client, monkeypatch):
+    from app.api.routes import intelligence
+
+    monkeypatch.setattr(intelligence, "_review_narrative", lambda facts: None)
+    for amount in ("50.00", "60.00", "250.00", "1000.00"):
+        response = client.post("/transactions/", json=sample_transaction(
+            amount=amount, category="Shopping", description=f"Shopping test {amount}"
+        ))
+        assert response.status_code == 201
+
+    response = client.get("/intelligence/financial-review")
+    assert response.status_code == 200
+    anomalies = response.json()["anomalies"]
+    assert len(anomalies) == 1
+    assert anomalies[0]["amount"] == 1000.0
+    assert anomalies[0]["category"] == "Shopping"
+
+
+def test_financial_review_returns_calculated_facts_and_advice(client, monkeypatch):
+    from app.api.routes import intelligence
+
+    monkeypatch.setattr(intelligence, "_review_narrative", lambda facts: None)
+    client.post("/transactions/", json=sample_transaction(amount="500.00"))
+    client.post("/transactions/", json=sample_transaction(
+        amount="250.00", description="Groceries", transaction_date="2026-10-12T12:00:00"
+    ))
+
+    response = client.get("/intelligence/financial-review")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["facts"]["current_month_expenses"] == 500.0
+    assert data["facts"]["previous_month_expenses"] == 250.0
+    assert data["facts"]["change_percentage"] == 100.0
+    assert data["advice"]
+    assert data["narrative_source"] == "rules"

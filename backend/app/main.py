@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.analytics import router as analytics_router
+from app.api.routes.intelligence import router as intelligence_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.budgets import router as budgets_router
 from app.api.routes.transactions import router as transactions_router
@@ -34,6 +35,7 @@ app.include_router(auth_router)
 app.include_router(transactions_router)
 app.include_router(budgets_router)
 app.include_router(analytics_router)
+app.include_router(intelligence_router)
 
 
 @app.get("/")
