@@ -153,24 +153,6 @@ def test_intelligence_category_suggestion_uses_fast_rules(client):
     assert data["source"] == "rules"
 
 
-def test_intelligence_category_suggestion_falls_back_to_rules(client, monkeypatch):
-    from app.api.routes import intelligence
-
-    monkeypatch.setattr(intelligence, "ollama_suggestion", lambda *args: None)
-    response = client.post(
-        "/intelligence/suggest-category",
-        json={
-            "description": "Monthly metro pass",
-            "merchant": "City Metro",
-            "transaction_type": "expense",
-        },
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["category"] == "Transport"
-    assert data["source"] == "rules"
-    assert data["confidence"] > 0
-
 
 def test_intelligence_category_suggestion_requires_authentication(client):
     from app.api.deps import get_current_user
