@@ -136,3 +136,60 @@ def test_reject_invalid_amount_and_category(client):
 def test_missing_transaction_returns_404(client):
     response = client.get("/transactions/9999")
     assert response.status_code == 404
+
+
+def test_intelligence_category_suggestion_uses_local_ai(client, monkeypatch):
+    from app.api.routes import intelligence
+
+    monkeypatch.setattr(
+        intelligence,
+        "ollama_suggestion",
+        lambda description, merchant, transaction_type: (
+            "Food", 0.91, "The merchant and description indicate a meal."
+        ),
+    )
+    response = client.post(
+        "/intelligence/suggest-category",
+        json={
+            "description": "Lunch with friends",
+            "merchant": "Campus Cafe",
+            "transaction_type": "expense",
+        },
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "category": "Food",
+        "confidence": 0.91,
+        "reason": "The merchant and description indicate a meal.",
+        "source": "ollama",
+    }
+
+
+def test_intelligence_category_suggestion_falls_back_to_rules(client, monkeypatch):
+    from app.api.routes import intelligence
+
+    monkeypatch.setattr(intelligence, "ollama_suggestion", lambda *args: None)
+    response = client.post(
+        "/intelligence/suggest-category",
+        json={
+            "description": "Monthly metro pass",
+            "merchant": "City Metro",
+            "transaction_type": "expense",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["category"] == "Transport"
+    assert data["source"] == "rules"
+    assert data["confidence"] > 0
+
+
+def test_intelligence_category_suggestion_requires_authentication(client):
+    from app.api.deps import get_current_user
+
+    app.dependency_overrides.pop(get_current_user, None)
+    response = client.post(
+        "/intelligence/suggest-category",
+        json={"description": "Lunch at cafe"},
+    )
+    assert response.status_code == 401
