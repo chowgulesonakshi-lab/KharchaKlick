@@ -64,13 +64,11 @@ def ollama_suggestion(description: str, merchant: str | None, transaction_type: 
 
 @router.post("/suggest-category", response_model=CategorySuggestionResponse)
 def suggest_category(payload: CategorySuggestionRequest, current_user: User = Depends(get_current_user)):
-    suggestion = ollama_suggestion(payload.description, payload.merchant, payload.transaction_type)
-    source = "ollama"
-    if suggestion is None:
-        suggestion = rule_based_suggestion(payload.description, payload.merchant)
-        source = "rules"
-    category, confidence, reason = suggestion
-    return CategorySuggestionResponse(category=category, confidence=confidence, reason=reason, source=source)
+    """Use fast local rules for category hints; reserve Ollama for richer financial explanations."""
+    category, confidence, reason = rule_based_suggestion(payload.description, payload.merchant)
+    return CategorySuggestionResponse(
+        category=category, confidence=confidence, reason=reason, source="rules"
+    )
 
 def _month_bounds(offset: int = 0):
     today = date.today()
