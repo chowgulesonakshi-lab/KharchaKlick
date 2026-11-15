@@ -12,12 +12,12 @@ from app.core.database import get_db
 from app.models.budget import Budget
 from app.models.transaction import Transaction
 from app.models.user import User
+from app.schemas.spending_intelligence import SpendingIntelligenceResponse
 from app.schemas.analytics import (
     CategoryAnalyticsResponse,
     CategoryBreakdown,
     FinancialInsight,
     FinancialInsightsResponse,
-    SpendingIntelligenceResponse,
     FinancialSummaryResponse,
     MonthlyAnalyticsResponse,
     MonthlySummaryPoint,
