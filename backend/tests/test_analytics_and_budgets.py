@@ -467,7 +467,7 @@ def test_spending_intelligence_comparison_forecast_and_category_drivers(client, 
     assert data["projected_month_end_spending"] is not None
     assert data["monthly_budget"] == "2000.00"
     assert data["category_changes"][0]["category"] == "Food"
-    assert data["category_changes"][0]["change_amount"] > 0
+    assert float(data["category_changes"][0]["change_amount"]) > 0
     assert "three most recent completed months" in data["explanation"]
 
 
