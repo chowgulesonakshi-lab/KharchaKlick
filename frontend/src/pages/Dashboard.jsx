@@ -46,6 +46,7 @@ function Dashboard() {
   const { user, logout } = useAuth()
   const [summary, setSummary] = useState(null)
   const [monthly, setMonthly] = useState(null)
+  const [intelligence, setIntelligence] = useState(null)
   const [transactions, setTransactions] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -60,15 +61,17 @@ function Dashboard() {
       setIsLoading(true)
       setError('')
       try {
-        const [summaryResult, monthlyResult, transactionResult] = await Promise.all([
+        const [summaryResult, monthlyResult, transactionResult, intelligenceResult] = await Promise.all([
           financeApi.summary({ period: 'monthly' }),
           financeApi.monthly({ months: 6 }),
           financeApi.transactions({ page: 1, page_size: 5 }),
+          financeApi.spendingIntelligence(),
         ])
 
         if (!isActive) return
         setSummary(summaryResult.data)
         setMonthly(monthlyResult.data)
+        setIntelligence(intelligenceResult.data)
         const transactionData = transactionResult.data
         setTransactions(Array.isArray(transactionData) ? transactionData : transactionData.items || transactionData.transactions || [])
       } catch {
@@ -97,7 +100,7 @@ function Dashboard() {
         <Link className="sidebar-link active" to="/dashboard"><LayoutDashboard size={18} /><span>Overview</span></Link>
         <Link className="sidebar-link" to="/transactions"><ReceiptText size={18} /><span>Transactions</span></Link>
         <Link className="sidebar-link" to="/budgets"><PiggyBank size={18} /><span>Budgets</span></Link>
-        <div className="sidebar-link" aria-disabled="true"><ChartNoAxesCombined size={18} /><span>Insights</span></div>
+        <a className="sidebar-link" href="#spending-intelligence"><ChartNoAxesCombined size={18} /><span>Insights</span></a>
         <div className="sidebar-footer">Your personal finance companion.<br />More clarity, one step at a time.</div>
       </aside>
 
@@ -135,6 +138,48 @@ function Dashboard() {
               </article>
             ))}
           </div>
+
+          <section className="panel intelligence-panel" id="spending-intelligence">
+            <div className="panel-heading">
+              <div><span className="eyebrow">Explainable spending intelligence</span><h2>What your spending is telling you</h2><p>Evidence-based comparison, category drivers and month-end outlook</p></div>
+              <ChartNoAxesCombined size={20} />
+            </div>
+            {isLoading ? <div className="chart-empty">Analysing your spending...</div> : intelligence ? (
+              <>
+                <div className="intelligence-topline">
+                  <span className={`health-status ${intelligence.health_status}`}>{intelligence.health_status === 'building_baseline' ? 'Building your baseline' : intelligence.health_status === 'needs_attention' ? 'Needs attention' : 'On track'}</span>
+                  <span className="intelligence-period">Month to date</span>
+                </div>
+                <div className="intelligence-metrics">
+                  <div><span>Spent so far</span><strong>{currency.format(Number(intelligence.current_month_spending || 0))}</strong></div>
+                  <div><span>Expected by today</span><strong>{intelligence.comparison_spending == null ? 'Not available' : currency.format(Number(intelligence.comparison_spending))}</strong></div>
+                  <div><span>Projected month-end</span><strong>{intelligence.projected_month_end_spending == null ? 'Not available' : currency.format(Number(intelligence.projected_month_end_spending))}</strong></div>
+                </div>
+                {intelligence.spending_change_percentage != null && (
+                  <p className="intelligence-change">Spending is {Math.abs(intelligence.spending_change_percentage)}% {intelligence.spending_change_percentage >= 0 ? 'above' : 'below'} your historical pace ({currency.format(Number(intelligence.spending_change_amount || 0))} difference).</p>
+                )}
+                {intelligence.monthly_budget != null && (
+                  <p className="intelligence-budget">Monthly budget: {currency.format(Number(intelligence.monthly_budget))} · Projected overrun: {currency.format(Number(intelligence.projected_budget_overrun || 0))}</p>
+                )}
+                <div className="intelligence-details">
+                  <div>
+                    <h3>What's driving the change?</h3>
+                    {intelligence.category_changes?.length ? intelligence.category_changes.map((item) => (
+                      <div className="intelligence-driver" key={item.category}><span>{item.category}</span><strong>+{currency.format(Number(item.change_amount))}</strong></div>
+                    )) : <p className="intelligence-muted">No category is currently above its expected pace.</p>}
+                  </div>
+                  <div>
+                    <h3>Unusual transactions</h3>
+                    {intelligence.unusual_transactions?.length ? intelligence.unusual_transactions.map((item) => (
+                      <div className="intelligence-driver" key={item.transaction_id}><span>{item.description} · {item.category}</span><strong>{currency.format(Number(item.amount))}</strong></div>
+                    )) : <p className="intelligence-muted">No transactions meet the unusual-spend threshold.</p>}
+                  </div>
+                </div>
+                <div className="intelligence-recommendation"><strong>Suggested next step</strong><p>{intelligence.recommendation}</p></div>
+                <p className="intelligence-footnote">{intelligence.explanation}</p>
+              </>
+            ) : <div className="chart-empty">Spending intelligence is temporarily unavailable.</div>}
+          </section>
 
           <div className="dashboard-panels">
             <section className="panel spending-panel">
