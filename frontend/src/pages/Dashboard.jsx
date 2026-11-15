@@ -6,6 +6,10 @@ import {
   ChartNoAxesCombined,
   CircleAlert,
   Clock3,
+  Sparkles,
+  TrendingUp,
+  ShieldCheck,
+  Lightbulb,
   LayoutDashboard,
   LogOut,
   PiggyBank,
@@ -140,9 +144,14 @@ function Dashboard() {
           </div>
 
           <section className="panel intelligence-panel" id="spending-intelligence">
-            <div className="panel-heading">
-              <div><span className="eyebrow">Explainable spending intelligence</span><h2>What your spending is telling you</h2><p>Evidence-based comparison, category drivers and month-end outlook</p></div>
-              <ChartNoAxesCombined size={20} />
+            <div className="intelligence-heading">
+              <div className="intelligence-heading-icon"><Sparkles size={21} /></div>
+              <div className="intelligence-heading-copy">
+                <span className="eyebrow">Your money, made clearer</span>
+                <h2>Spending intelligence</h2>
+                <p>Understand your habits, spot changes and plan the rest of your month.</p>
+              </div>
+              <span className="intelligence-powered"><ShieldCheck size={14} /> Evidence-based</span>
             </div>
             {isLoading ? <div className="chart-empty">Analysing your spending...</div> : intelligence ? (
               <>
@@ -151,31 +160,34 @@ function Dashboard() {
                   <span className="intelligence-period">Month to date</span>
                 </div>
                 <div className="intelligence-metrics">
-                  <div><span>Spent so far</span><strong>{currency.format(Number(intelligence.current_month_spending || 0))}</strong></div>
-                  <div><span>Expected by today</span><strong>{intelligence.comparison_spending == null ? 'Not available' : currency.format(Number(intelligence.comparison_spending))}</strong></div>
-                  <div><span>Projected month-end</span><strong>{intelligence.projected_month_end_spending == null ? 'Not available' : currency.format(Number(intelligence.projected_month_end_spending))}</strong></div>
+                  <div className="intelligence-metric metric-spent"><span><Wallet size={15} /> Spent so far</span><strong>{currency.format(Number(intelligence.current_month_spending || 0))}</strong><small>Your recorded expenses</small></div>
+                  <div className="intelligence-metric metric-expected"><span><TrendingUp size={15} /> Expected by today</span><strong>{intelligence.comparison_spending == null ? 'Not available' : currency.format(Number(intelligence.comparison_spending))}</strong><small>{intelligence.comparison_spending == null ? 'Needs completed-month history' : 'Based on your past spending'}</small></div>
+                  <div className="intelligence-metric metric-projected"><span><ChartNoAxesCombined size={15} /> Month-end estimate</span><strong>{intelligence.projected_month_end_spending == null ? 'Not available' : currency.format(Number(intelligence.projected_month_end_spending))}</strong><small>{intelligence.projected_month_end_spending == null ? 'Available after baseline builds' : 'If your current pace continues'}</small></div>
                 </div>
                 {intelligence.spending_change_percentage != null && (
                   <p className="intelligence-change">Spending is {Math.abs(intelligence.spending_change_percentage)}% {intelligence.spending_change_percentage >= 0 ? 'above' : 'below'} your historical pace ({currency.format(Number(intelligence.spending_change_amount || 0))} difference).</p>
                 )}
                 {intelligence.monthly_budget != null && (
-                  <p className="intelligence-budget">Monthly budget: {currency.format(Number(intelligence.monthly_budget))} · Projected overrun: {currency.format(Number(intelligence.projected_budget_overrun || 0))}</p>
+                  <div className="intelligence-budget">
+                    <span><Wallet size={15} /> Monthly budget <strong>{currency.format(Number(intelligence.monthly_budget))}</strong></span>
+                    <span>Projected overrun <strong>{intelligence.projected_budget_overrun == null ? 'Not available' : currency.format(Number(intelligence.projected_budget_overrun))}</strong></span>
+                  </div>
                 )}
                 <div className="intelligence-details">
-                  <div>
-                    <h3>What's driving the change?</h3>
+                  <div className="intelligence-detail-card">
+                    <h3><TrendingUp size={17} /> What's driving the change?</h3>
                     {intelligence.category_changes?.length ? intelligence.category_changes.map((item) => (
                       <div className="intelligence-driver" key={item.category}><span>{item.category}</span><strong>+{currency.format(Number(item.change_amount))}</strong></div>
                     )) : <p className="intelligence-muted">No category is currently above its expected pace.</p>}
                   </div>
-                  <div>
-                    <h3>Unusual transactions</h3>
+                  <div className="intelligence-detail-card">
+                    <h3><CircleAlert size={17} /> Unusual transactions</h3>
                     {intelligence.unusual_transactions?.length ? intelligence.unusual_transactions.map((item) => (
                       <div className="intelligence-driver" key={item.transaction_id}><span>{item.description} · {item.category}</span><strong>{currency.format(Number(item.amount))}</strong></div>
                     )) : <p className="intelligence-muted">No transactions meet the unusual-spend threshold.</p>}
                   </div>
                 </div>
-                <div className="intelligence-recommendation"><strong>Suggested next step</strong><p>{intelligence.recommendation}</p></div>
+                <div className="intelligence-recommendation"><div className="recommendation-icon"><Lightbulb size={19} /></div><div><strong>Suggested next step</strong><p>{intelligence.recommendation}</p></div></div>
                 <p className="intelligence-footnote">{intelligence.explanation}</p>
               </>
             ) : <div className="chart-empty">Spending intelligence is temporarily unavailable.</div>}
