@@ -17,6 +17,7 @@ from app.schemas.analytics import (
     CategoryBreakdown,
     FinancialInsight,
     FinancialInsightsResponse,
+    SpendingIntelligenceResponse,
     FinancialSummaryResponse,
     MonthlyAnalyticsResponse,
     MonthlySummaryPoint,
@@ -611,4 +612,200 @@ def get_financial_insights(
         savings_rate=savings_rate,
         insights=insights,
         budget_alerts=budget_alerts,
+    )
+
+
+@router.get("/spending-intelligence", response_model=SpendingIntelligenceResponse)
+def get_spending_intelligence(
+    reference_date: date | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Explain month-to-date spending changes using the user's own history."""
+    from statistics import median
+
+    from app.schemas.spending_intelligence import (
+        SpendingChange,
+        SpendingIntelligenceResponse,
+        UnusualTransaction,
+    )
+
+    ref = reference_date or date.today()
+    month_start = datetime(ref.year, ref.month, 1)
+    next_month_start = (
+        datetime(ref.year + 1, 1, 1)
+        if ref.month == 12
+        else datetime(ref.year, ref.month + 1, 1)
+    )
+    elapsed_days = ref.day
+    days_in_month = (next_month_start.date() - month_start.date()).days
+
+    current_transactions = (
+        db.query(Transaction)
+        .filter(
+            Transaction.user_id == current_user.id,
+            Transaction.transaction_type == "expense",
+            Transaction.transaction_date >= month_start,
+            Transaction.transaction_date < datetime.combine(ref + timedelta(days=1), time.min),
+        )
+        .order_by(Transaction.transaction_date.desc())
+        .all()
+    )
+    current_total = sum((to_decimal(tx.amount) for tx in current_transactions), Decimal("0.00"))
+
+    # Use the three most recent completed months as a personal daily-spend baseline.
+    historical_start = month_start
+    for _ in range(3):
+        historical_start = (historical_start.replace(day=1) - timedelta(days=1)).replace(day=1)
+    historical_transactions = (
+        db.query(Transaction)
+        .filter(
+            Transaction.user_id == current_user.id,
+            Transaction.transaction_type == "expense",
+            Transaction.transaction_date >= historical_start,
+            Transaction.transaction_date < month_start,
+        )
+        .all()
+    )
+
+    month_totals: list[Decimal] = []
+    category_month_totals: dict[str, list[Decimal]] = {}
+    cursor = historical_start
+    while cursor < month_start:
+        month_end = (
+            datetime(cursor.year + 1, 1, 1)
+            if cursor.month == 12
+            else datetime(cursor.year, cursor.month + 1, 1)
+        )
+        totals: dict[str, Decimal] = {}
+        for tx in historical_transactions:
+            if cursor <= tx.transaction_date < month_end:
+                totals[tx.category] = totals.get(tx.category, Decimal("0.00")) + to_decimal(tx.amount)
+        month_totals.append(sum(totals.values(), Decimal("0.00")))
+        for category, amount in totals.items():
+            category_month_totals.setdefault(category, []).append(amount)
+        cursor = month_end
+
+    has_history = bool(historical_transactions) and any(value > 0 for value in month_totals)
+    category_changes: list[SpendingChange] = []
+    comparison_spend: Decimal | None = None
+    change_amount: Decimal | None = None
+    change_percentage: float | None = None
+    projected_spend: Decimal | None = None
+
+    if has_history:
+        total_historical_days = sum(
+            (calendar.monthrange((historical_start.year + (historical_start.month - 1 + i) // 12),
+                                 ((historical_start.month - 1 + i) % 12) + 1)[1]
+             for i in range(3))
+        )
+        average_daily = sum(month_totals, Decimal("0.00")) / Decimal(total_historical_days)
+        comparison_spend = (average_daily * Decimal(elapsed_days)).quantize(Decimal("0.01"))
+        change_amount = (current_total - comparison_spend).quantize(Decimal("0.01"))
+        if comparison_spend > 0:
+            change_percentage = round(float((change_amount / comparison_spend) * 100), 1)
+        projected_spend = (
+            current_total / Decimal(elapsed_days) * Decimal(days_in_month)
+        ).quantize(Decimal("0.01")) if elapsed_days else Decimal("0.00")
+
+        current_by_category: dict[str, Decimal] = {}
+        for tx in current_transactions:
+            current_by_category[tx.category] = current_by_category.get(tx.category, Decimal("0.00")) + to_decimal(tx.amount)
+        for category in set(category_month_totals) | set(current_by_category):
+            monthly_values = category_month_totals.get(category, [])
+            average_category_month = (
+                sum(monthly_values, Decimal("0.00")) / Decimal(3)
+            )
+            expected = (
+                average_category_month * Decimal(elapsed_days) / Decimal(days_in_month)
+            ).quantize(Decimal("0.01"))
+            actual = current_by_category.get(category, Decimal("0.00"))
+            delta = (actual - expected).quantize(Decimal("0.01"))
+            if delta > Decimal("0.00"):
+                category_changes.append(SpendingChange(
+                    category=category,
+                    current_spend=actual,
+                    expected_spend=expected,
+                    change_amount=delta,
+                ))
+        category_changes.sort(key=lambda item: item.change_amount, reverse=True)
+
+    # Flag a current-month transaction only when at least three prior same-category
+    # observations exist and it is >= 2.5x the historical median.
+    prior_by_category: dict[str, list[Decimal]] = {}
+    for tx in historical_transactions:
+        prior_by_category.setdefault(tx.category, []).append(to_decimal(tx.amount))
+    unusual: list[UnusualTransaction] = []
+    for tx in current_transactions:
+        prior_values = prior_by_category.get(tx.category, [])
+        if len(prior_values) < 3:
+            continue
+        category_median = Decimal(str(median(prior_values))).quantize(Decimal("0.01"))
+        amount = to_decimal(tx.amount)
+        if category_median > 0 and amount >= category_median * Decimal("2.5"):
+            unusual.append(UnusualTransaction(
+                transaction_id=tx.id,
+                description=tx.description,
+                category=tx.category,
+                amount=amount,
+                historical_median=category_median,
+                date=tx.transaction_date.date(),
+            ))
+    unusual.sort(key=lambda item: item.amount, reverse=True)
+
+    budgets = (
+        db.query(Budget)
+        .filter(
+            Budget.user_id == current_user.id,
+            Budget.month == ref.month,
+            Budget.year == ref.year,
+        )
+        .all()
+    )
+    overall_budget = next((budget.amount for budget in budgets if budget.category is None), None)
+    monthly_budget = (
+        to_decimal(overall_budget)
+        if overall_budget is not None
+        else sum((to_decimal(budget.amount) for budget in budgets), Decimal("0.00")) or None
+    )
+    projected_overrun = (
+        (projected_spend - monthly_budget).quantize(Decimal("0.01"))
+        if projected_spend is not None and monthly_budget is not None and projected_spend > monthly_budget
+        else Decimal("0.00") if monthly_budget is not None and projected_spend is not None else None
+    )
+
+    if not has_history:
+        health_status = "building_baseline"
+        recommendation = "Keep recording expenses. KharchaKlick needs completed-month history before it can make a reliable personal comparison or forecast."
+    elif projected_overrun is not None and projected_overrun > 0:
+        health_status = "needs_attention"
+        remaining_days = max(days_in_month - elapsed_days, 1)
+        weekly_reduction = (projected_overrun / Decimal(remaining_days) * Decimal(7)).quantize(Decimal("0.01"))
+        recommendation = f"Your projected spending is above budget by ₹{projected_overrun}. Reduce discretionary spending by about ₹{weekly_reduction} per week for the rest of the month to close the projected gap."
+    elif change_percentage is not None and change_percentage >= 20:
+        health_status = "needs_attention"
+        recommendation = "Review the categories contributing most to the increase and set a weekly discretionary spending limit."
+    else:
+        health_status = "on_track"
+        recommendation = "Your current spending is not projected to exceed the available monthly budget. Keep monitoring the categories that are rising fastest."
+
+    return SpendingIntelligenceResponse(
+        has_sufficient_history=has_history,
+        health_status=health_status,
+        current_month_spending=current_total,
+        comparison_spending=comparison_spend,
+        spending_change_amount=change_amount,
+        spending_change_percentage=change_percentage,
+        category_changes=category_changes[:5],
+        unusual_transactions=unusual[:3],
+        projected_month_end_spending=projected_spend,
+        monthly_budget=monthly_budget,
+        projected_budget_overrun=projected_overrun,
+        recommendation=recommendation,
+        explanation=(
+            "Comparison uses the average daily expense across the three most recent completed months, scaled to the elapsed days in this month. "
+            "Month-end spending is a straight-line projection from month-to-date spending; it is an estimate, not a guarantee."
+            if has_history else
+            "Not enough completed-month expense history is available for a personal comparison or projection."
+        ),
     )
