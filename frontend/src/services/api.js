@@ -20,6 +20,7 @@ export const authApi = {
 export const financeApi = {
   summary: (params = {}) => api.get('/analytics/summary', { params }),
   monthly: (params = {}) => api.get('/analytics/monthly', { params }),
+  spendingIntelligence: (params = {}) => api.get('/analytics/spending-intelligence', { params }),
   categories: (params = {}) => api.get('/analytics/categories', { params }),
   transactions: (params = {}) => api.get('/transactions/', { params }),
   createTransaction: (payload) => api.post('/transactions/', payload),
