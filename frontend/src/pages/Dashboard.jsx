@@ -6,6 +6,10 @@ import {
   ChartNoAxesCombined,
   CircleAlert,
   Clock3,
+  Sparkles,
+  TrendingUp,
+  ShieldCheck,
+  Lightbulb,
   LayoutDashboard,
   LogOut,
   PiggyBank,
@@ -46,6 +50,7 @@ function Dashboard() {
   const { user, logout } = useAuth()
   const [summary, setSummary] = useState(null)
   const [monthly, setMonthly] = useState(null)
+  const [intelligence, setIntelligence] = useState(null)
   const [transactions, setTransactions] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -60,15 +65,17 @@ function Dashboard() {
       setIsLoading(true)
       setError('')
       try {
-        const [summaryResult, monthlyResult, transactionResult] = await Promise.all([
+        const [summaryResult, monthlyResult, transactionResult, intelligenceResult] = await Promise.all([
           financeApi.summary({ period: 'monthly' }),
           financeApi.monthly({ months: 6 }),
           financeApi.transactions({ page: 1, page_size: 5 }),
+          financeApi.spendingIntelligence(),
         ])
 
         if (!isActive) return
         setSummary(summaryResult.data)
         setMonthly(monthlyResult.data)
+        setIntelligence(intelligenceResult.data)
         const transactionData = transactionResult.data
         setTransactions(Array.isArray(transactionData) ? transactionData : transactionData.items || transactionData.transactions || [])
       } catch {
@@ -97,7 +104,7 @@ function Dashboard() {
         <Link className="sidebar-link active" to="/dashboard"><LayoutDashboard size={18} /><span>Overview</span></Link>
         <Link className="sidebar-link" to="/transactions"><ReceiptText size={18} /><span>Transactions</span></Link>
         <Link className="sidebar-link" to="/budgets"><PiggyBank size={18} /><span>Budgets</span></Link>
-        <div className="sidebar-link" aria-disabled="true"><ChartNoAxesCombined size={18} /><span>Insights</span></div>
+        <a className="sidebar-link" href="#spending-intelligence"><ChartNoAxesCombined size={18} /><span>Insights</span></a>
         <div className="sidebar-footer">Your personal finance companion.<br />More clarity, one step at a time.</div>
       </aside>
 
@@ -135,6 +142,56 @@ function Dashboard() {
               </article>
             ))}
           </div>
+
+          <section className="panel intelligence-panel" id="spending-intelligence">
+            <div className="intelligence-heading">
+              <div className="intelligence-heading-icon"><Sparkles size={21} /></div>
+              <div className="intelligence-heading-copy">
+                <span className="eyebrow">Your money, made clearer</span>
+                <h2>Spending intelligence</h2>
+                <p>Understand your habits, spot changes and plan the rest of your month.</p>
+              </div>
+              <span className="intelligence-powered"><ShieldCheck size={14} /> Evidence-based</span>
+            </div>
+            {isLoading ? <div className="chart-empty">Analysing your spending...</div> : intelligence ? (
+              <>
+                <div className="intelligence-topline">
+                  <span className={`health-status ${intelligence.health_status}`}>{intelligence.health_status === 'building_baseline' ? 'Building your baseline' : intelligence.health_status === 'needs_attention' ? 'Needs attention' : 'On track'}</span>
+                  <span className="intelligence-period">Month to date</span>
+                </div>
+                <div className="intelligence-metrics">
+                  <div className="intelligence-metric metric-spent"><span><Wallet size={15} /> Spent so far</span><strong>{currency.format(Number(intelligence.current_month_spending || 0))}</strong><small>Your recorded expenses</small></div>
+                  <div className="intelligence-metric metric-expected"><span><TrendingUp size={15} /> Expected by today</span><strong>{intelligence.comparison_spending == null ? 'Not available' : currency.format(Number(intelligence.comparison_spending))}</strong><small>{intelligence.comparison_spending == null ? 'Needs completed-month history' : 'Based on your past spending'}</small></div>
+                  <div className="intelligence-metric metric-projected"><span><ChartNoAxesCombined size={15} /> Month-end estimate</span><strong>{intelligence.projected_month_end_spending == null ? 'Not available' : currency.format(Number(intelligence.projected_month_end_spending))}</strong><small>{intelligence.projected_month_end_spending == null ? 'Available after baseline builds' : 'If your current pace continues'}</small></div>
+                </div>
+                {intelligence.spending_change_percentage != null && (
+                  <p className="intelligence-change">Spending is {Math.abs(intelligence.spending_change_percentage)}% {intelligence.spending_change_percentage >= 0 ? 'above' : 'below'} your historical pace ({currency.format(Number(intelligence.spending_change_amount || 0))} difference).</p>
+                )}
+                {intelligence.monthly_budget != null && (
+                  <div className="intelligence-budget">
+                    <span><Wallet size={15} /> Monthly budget <strong>{currency.format(Number(intelligence.monthly_budget))}</strong></span>
+                    <span>Projected overrun <strong>{intelligence.projected_budget_overrun == null ? 'Not available' : currency.format(Number(intelligence.projected_budget_overrun))}</strong></span>
+                  </div>
+                )}
+                <div className="intelligence-details">
+                  <div className="intelligence-detail-card">
+                    <h3><TrendingUp size={17} /> What's driving the change?</h3>
+                    {intelligence.category_changes?.length ? intelligence.category_changes.map((item) => (
+                      <div className="intelligence-driver" key={item.category}><span>{item.category}</span><strong>+{currency.format(Number(item.change_amount))}</strong></div>
+                    )) : <p className="intelligence-muted">No category is currently above its expected pace.</p>}
+                  </div>
+                  <div className="intelligence-detail-card">
+                    <h3><CircleAlert size={17} /> Unusual transactions</h3>
+                    {intelligence.unusual_transactions?.length ? intelligence.unusual_transactions.map((item) => (
+                      <div className="intelligence-driver" key={item.transaction_id}><span>{item.description} · {item.category}</span><strong>{currency.format(Number(item.amount))}</strong></div>
+                    )) : <p className="intelligence-muted">No transactions meet the unusual-spend threshold.</p>}
+                  </div>
+                </div>
+                <div className="intelligence-recommendation"><div className="recommendation-icon"><Lightbulb size={19} /></div><div><strong>Suggested next step</strong><p>{intelligence.recommendation}</p></div></div>
+                <p className="intelligence-footnote">{intelligence.explanation}</p>
+              </>
+            ) : <div className="chart-empty">Spending intelligence is temporarily unavailable.</div>}
+          </section>
 
           <div className="dashboard-panels">
             <section className="panel spending-panel">
