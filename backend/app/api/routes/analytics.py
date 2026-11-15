@@ -624,11 +624,7 @@ def get_spending_intelligence(
     """Explain month-to-date spending changes using the user's own history."""
     from statistics import median
 
-    from app.schemas.spending_intelligence import (
-        SpendingChange,
-        SpendingIntelligenceResponse,
-        UnusualTransaction,
-    )
+    from app.schemas.spending_intelligence import SpendingChange, UnusualTransaction
 
     ref = reference_date or date.today()
     month_start = datetime(ref.year, ref.month, 1)
@@ -787,7 +783,11 @@ def get_spending_intelligence(
         recommendation = "Review the categories contributing most to the increase and set a weekly discretionary spending limit."
     else:
         health_status = "on_track"
-        recommendation = "Your current spending is not projected to exceed the available monthly budget. Keep monitoring the categories that are rising fastest."
+        recommendation = (
+            "No monthly budget is set yet. Add one to track a budget-based month-end outlook; meanwhile, monitor the categories that are rising fastest."
+            if monthly_budget is None
+            else "Your current spending is not projected to exceed your monthly budget. Keep monitoring the categories that are rising fastest."
+        )
 
     return SpendingIntelligenceResponse(
         has_sufficient_history=has_history,
