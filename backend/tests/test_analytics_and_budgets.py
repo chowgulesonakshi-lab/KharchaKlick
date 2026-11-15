@@ -432,3 +432,67 @@ def test_analytics_and_budgets_cross_user_isolation(client, user_a_headers, user
 
     # User B cannot delete User A's budget -> 404
     assert client.delete(f"/budgets/{a_budget_id}", headers=user_b_headers).status_code == 404
+
+
+# ============================================================================
+# 7. Explainable Spending Intelligence
+# ============================================================================
+
+def test_spending_intelligence_comparison_forecast_and_category_drivers(client, user_a_headers):
+    # Three completed months establish a personal baseline.
+    for month in (8, 9, 10):
+        add_tx(client, user_a_headers, "300.00", "expense", "Food", f"2026-{month:02d}-05T10:00:00")
+        add_tx(client, user_a_headers, "100.00", "expense", "Transport", f"2026-{month:02d}-06T10:00:00")
+
+    # Current month: Food is running above its historical pace.
+    add_tx(client, user_a_headers, "1200.00", "expense", "Food", "2026-11-05T10:00:00")
+    add_tx(client, user_a_headers, "100.00", "expense", "Transport", "2026-11-06T10:00:00")
+    client.post(
+        "/budgets/",
+        json={"category": None, "amount": "2000.00", "month": 11, "year": 2026},
+        headers=user_a_headers,
+    )
+
+    response = client.get(
+        "/analytics/spending-intelligence",
+        params={"reference_date": "2026-11-15"},
+        headers=user_a_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["has_sufficient_history"] is True
+    assert data["current_month_spending"] == "1300.00"
+    assert data["comparison_spending"] is not None
+    assert data["spending_change_amount"] is not None
+    assert data["projected_month_end_spending"] is not None
+    assert data["monthly_budget"] == "2000.00"
+    assert data["category_changes"][0]["category"] == "Food"
+    assert data["category_changes"][0]["change_amount"] > 0
+    assert "three most recent completed months" in data["explanation"]
+
+
+def test_spending_intelligence_builds_baseline_without_history(client, user_a_headers):
+    add_tx(client, user_a_headers, "500.00", "expense", "Food", "2026-11-05T10:00:00")
+    response = client.get(
+        "/analytics/spending-intelligence",
+        params={"reference_date": "2026-11-15"},
+        headers=user_a_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["has_sufficient_history"] is False
+    assert data["comparison_spending"] is None
+    assert data["projected_month_end_spending"] is None
+    assert data["health_status"] == "building_baseline"
+
+
+def test_spending_intelligence_is_user_scoped(client, user_a_headers, user_b_headers):
+    add_tx(client, user_a_headers, "900.00", "expense", "Shopping", "2026-11-05T10:00:00")
+    response = client.get(
+        "/analytics/spending-intelligence",
+        params={"reference_date": "2026-11-15"},
+        headers=user_b_headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["current_month_spending"] == "0.00"
+    assert response.json()["has_sufficient_history"] is False
